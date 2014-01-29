@@ -54,9 +54,9 @@
 @end
 
 @interface PSListController (PassTime)
--(void)longerautolock_promptUserForSpecifier;
--(void)longerautolock_addSpecifierForNotification:(NSNotification *)notification;
--(void)longerautolock_reselectSpecifier;
+-(void)passtime_promptUserForSpecifier;
+-(void)passtime_addSpecifierForNotification:(NSNotification *)notification;
+-(void)passtime_reselectSpecifier;
 @end
 
 %hook PSListController
@@ -69,9 +69,9 @@ static PTAlertViewDelegate *ptdelegate;
 		[self reloadSpecifiers];
 
 	if([self.navigationItem.title isEqualToString:@"Require Passcode"]){
-		self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCompose target:self action:@selector(longerautolock_promptUserForSpecifier)];
-		[[NSDistributedNotificationCenter defaultCenter] addObserver:self selector:@selector(longerautolock_addSpecifierForNotification:) name:@"PTAddSpecifier" object:nil];
-		[[NSDistributedNotificationCenter defaultCenter] addObserver:self selector:@selector(longerautolock_reselectSpecifier) name:@"PTReselectSpecifier" object:nil];
+		self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCompose target:self action:@selector(passtime_promptUserForSpecifier)];
+		[[NSDistributedNotificationCenter defaultCenter] addObserver:self selector:@selector(passtime_addSpecifierForNotification:) name:@"PTAddSpecifier" object:nil];
+		[[NSDistributedNotificationCenter defaultCenter] addObserver:self selector:@selector(passtime_reselectSpecifier) name:@"PTReselectSpecifier" object:nil];
 
 		NSError *error;
 		NSFileManager *fileManager = [NSFileManager defaultManager];
@@ -114,7 +114,7 @@ static PTAlertViewDelegate *ptdelegate;
 	%orig();
 }
 
-%new -(void)longerautolock_promptUserForSpecifier{
+%new -(void)passtime_promptUserForSpecifier{
 	NSLog(@"[PassTime]: Prompting user for additional specifier creation.");
 
 	ptdelegate = [[PTAlertViewDelegate alloc] init];
@@ -132,7 +132,7 @@ static PTAlertViewDelegate *ptdelegate;
     [ptalertview show];
 }
 
-%new -(void)longerautolock_addSpecifierForNotification:(NSNotification *)notification{
+%new -(void)passtime_addSpecifierForNotification:(NSNotification *)notification{
 	NSLog(@"[PassTime]: Refreshing tableView (%@) for given specifier title: %@", [self table], [notification userInfo][@"PTTitle"]);
 	[self reloadSpecifiers];
 
@@ -145,43 +145,18 @@ static PTAlertViewDelegate *ptdelegate;
    }
 }
 
-%new -(void)longerautolock_reselectSpecifier{
+%new -(void)passtime_reselectSpecifier{
 	[self tableView:[self table] didSelectRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0]];
 }
 
 %end
 
 @interface PSListItemsController (PassTime)
--(void)longerautolock_addFooterToView;
+-(void)passtime_addFooterToView;
 @end
 
 %hook PSListItemsController
-static UILabel *ptfooterLabel;
 static PTAlertViewDelegate *ptdeleteDelegate;
-static BOOL ptaddedHeavyLine;
-
--(void)viewWillAppear:(BOOL)arg1{
-	ptaddedHeavyLine = NO;
-	%orig();
-}
-
--(void)reloadSpecifiers{
-	ptaddedHeavyLine = NO;
-	%orig();
-}
-
--(id)tableView:(id)arg1 cellForRowAtIndexPath:(id)arg2{
-	PSTableCell *cell = (PSTableCell *)%orig();
-	if([self.navigationItem.title isEqualToString:@"Require Passcode"] && ![PTDEFAULT_TITLES containsObject:[cell title]] && !ptaddedHeavyLine){
-		ptaddedHeavyLine = YES;
-		
-		UIView *heavyLine = [[UIView alloc] initWithFrame:CGRectMake(15.0, 0.0, cell.frame.size.width - 15.0, 2.0)];
-		[heavyLine setBackgroundColor:[UIColor lightGrayColor]];
-        [cell.contentView addSubview:heavyLine];
-	}
-
-	return cell;
-}
 
 -(id)itemsFromParent{
 	NSArray *items = %orig();
