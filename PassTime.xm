@@ -160,12 +160,11 @@ static PTAlertViewDelegate *ptdeleteDelegate;
 
 -(id)itemsFromParent{
 	NSArray *items = %orig();
-	PSSpecifier *first = items.count > 0?items[1]:nil;
-	BOOL inPasscode = first && [first.name isEqualToString:@"Immediately"];
 
-	NSLog(@"[PassTime] Received call to -itemsFromParent, appears we %@ in Require Passcode pane (%@)", NSStringFromBool(inPasscode), self);
+	NSLog(@"[PassTime] Received call to -itemsFromParent, appears we %@ in Require Passcode pane (%@)", NSStringFromBool([self.navigationItem.title isEqualToString:@"Require Passcode"]), self);
 	
-	if(inPasscode){
+	if([self.navigationItem.title isEqualToString:@"Require Passcode"]){
+		PSSpecifier *first = items.count > 0?items[1]:nil;
 		NSMutableArray *additional = [[NSMutableArray alloc] init];
 		for(int i = 0; i < items.count - 1; i++)
 			[additional addObject:items[i]];
