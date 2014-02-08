@@ -4,7 +4,19 @@
 #define PTPREFS_PATH [NSHomeDirectory() stringByAppendingPathComponent:@"/Library/Application Support/PassTime"]
 #define PTPREFS_PLIST [NSHomeDirectory() stringByAppendingPathComponent:@"/Library/Application Support/PassTime/SavedDurations.plist"]
 #define PTLAST_PLIST [NSHomeDirectory() stringByAppendingPathComponent:@"/Library/Application Support/PassTime/LastSelected.plist"]
-#define PTDEFAULT_TITLES @[@"Immediately", @"After 1 minute", @"After 5 minutes", @"After 15 minutes", @"After 1 hour", @"After 4 hours"]
+
+#define PTDEFAULT_TITLES @[[[NSBundle mainBundle] localizedStringForKey:@"IMMEDIATELY" value:@"Immediately" table:@"General"], [[NSBundle mainBundle] localizedStringForKey:@"AFTER_1_MIN" value:@"After 1 minute" table:@"General"], [[NSBundle mainBundle] localizedStringForKey:@"AFTER_5_MIN" value:@"After 5 minutes" table:@"General"], [[NSBundle mainBundle] localizedStringForKey:@"AFTER_15_MIN" value:@"After 15 minutes" table:@"General"], [[NSBundle mainBundle] localizedStringForKey:@"AFTER_1_HOUR" value:@"After 1 hour" table:@"General"], [[NSBundle mainBundle] localizedStringForKey:@"AFTER_4_HOURS" value:@"After 4 hours" table:@"General"]]
+
+#define PTIMM_TEXT [[NSBundle mainBundle] localizedStringForKey:@"IMMEDIATELY" value:@"Immediately" table:@"General"]
+#define PTGENERAL_TEXT  [[NSBundle mainBundle] localizedStringForKey:@"General" value:@"General" table:@"General"]
+#define PTPASSCODE_TEXT  [[NSBundle mainBundle] localizedStringForKey:@"Passcode Lock" value:@"Passcode Lock" table:@"Passcode Lock"]
+#define PTMESAPASSCODE_TEXT  [[NSBundle mainBundle] localizedStringForKey:@"MESA" value:@"Touch ID & Passcode" table:@"Passcode Lock Mesa"]
+#define PTREQPASSCODE_TEXT  [[NSBundle mainBundle] localizedStringForKey:@"PASSCODE_REQ" value:@"Require Passcode" table:@"Passcode Lock"]
+
+#define PTLOCALIZE_TEXT [[NSBundle mainBundle] localizedStringForKey:@"15_MINUTES" value:@"After %@ minutes" table:@"Passcode Lock"]
+
+#define PTLOCALIZE(str) [NSString stringWithFormat:PTLOCALIZE_TEXT, str]
+
 
 @interface PTAlertViewDelegate : NSObject <UIAlertViewDelegate>
 -(void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex;
@@ -16,7 +28,7 @@
 		NSString *durationText = [alertView textFieldAtIndex:0].text;
 		NSNumber *duration = [NSNumber numberWithInt:[durationText intValue] * 60];
 		if(!duration || [duration intValue] <= 60){
-			[[[UIAlertView alloc] initWithTitle:@"Passcode Duration Invalid" message:[NSString stringWithFormat:@"The requested duration, %@, is invalid. Make sure your requests are new, minute-long durations, nothing more or less.", durationText] delegate:nil cancelButtonTitle:@"Dismiss" otherButtonTitles:nil] show];
+			[[[UIAlertView alloc] initWithTitle:[PTPASSCODE_TEXT stringByAppendingString:@" Duration Invalid"] message:[NSString stringWithFormat:@"The requested duration, %@, is invalid. Make sure your requests are new, minute-long durations, nothing more or less.", durationText] delegate:nil cancelButtonTitle:@"Dismiss" otherButtonTitles:nil] show];
 			return;
 		}
 
@@ -24,7 +36,7 @@
 		NSDictionary *finalized;
 		BOOL isDuplicate = NO;
 		if(![fileManager fileExistsAtPath:PTPREFS_PLIST]){
-			NSDictionary *newPrefs = @{[duration stringValue] : [NSString stringWithFormat:@"After %@ minutes", durationText]};
+			NSDictionary *newPrefs = @{[duration stringValue] : PTLOCALIZE(durationText)};
 			finalized = newPrefs;
 		}
 
@@ -38,14 +50,14 @@
 					[newPrefs setObject:[savedPrefs objectForKey:key] forKey:key];
 			
 			if(!isDuplicate)
-				[newPrefs setObject:[NSString stringWithFormat:@"After %@ minutes", durationText] forKey:[duration stringValue]];
+				[newPrefs setObject:PTLOCALIZE(durationText) forKey:[duration stringValue]];
 
 			finalized = newPrefs;
 		}
 
 		NSLog(@"[PassTime]: Wrote the augmented specifier plist (%@) to file %@.", finalized, PTPREFS_PLIST);
 		[finalized writeToFile:PTPREFS_PLIST atomically:YES];
-		[[NSDistributedNotificationCenter defaultCenter] postNotificationName:@"PTAddSpecifier" object:nil userInfo:@{@"PTTitle" : [NSString stringWithFormat:@"After %@ minutes", durationText]}];
+		[[NSDistributedNotificationCenter defaultCenter] postNotificationName:@"PTAddSpecifier" object:nil userInfo:@{@"PTTitle" : PTLOCALIZE(durationText)}];
 
 		if(isDuplicate && alertView.tag == [durationText intValue])
 			[[NSDistributedNotificationCenter defaultCenter] postNotificationName:@"PTReselectSpecifier" object:nil];
@@ -65,10 +77,10 @@ static PTAlertViewDelegate *ptdelegate;
 -(void)viewWillAppear:(BOOL)animated{
 	%orig();
 
-	if([self.navigationItem.title rangeOfString:@"Passcode"].location != NSNotFound)
+	if([self.navigationItem.title isEqualToString:PTPASSCODE_TEXT] || [self.navigationItem.title isEqualToString:PTMESAPASSCODE_TEXT])
 		[self reloadSpecifiers];
 
-	if([self.navigationItem.title isEqualToString:@"Require Passcode"]){
+	if([self.navigationItem.title isEqualToString:PTREQPASSCODE_TEXT]){
 		self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCompose target:self action:@selector(passtime_promptUserForSpecifier)];
 		[[NSDistributedNotificationCenter defaultCenter] addObserver:self selector:@selector(passtime_addSpecifierForNotification:) name:@"PTAddSpecifier" object:nil];
 		[[NSDistributedNotificationCenter defaultCenter] addObserver:self selector:@selector(passtime_reselectSpecifier) name:@"PTReselectSpecifier" object:nil];
@@ -90,7 +102,7 @@ static PTAlertViewDelegate *ptdelegate;
 
 -(PSTableCell *)tableView:(UITableView *)arg1 cellForRowAtIndexPath:(NSIndexPath *)arg2{
 	PSTableCell *cell = %orig();
-	if([cell.title isEqualToString:@"Require Passcode"] && [NSDictionary dictionaryWithContentsOfFile:PTLAST_PLIST] != nil)
+	if([cell.title isEqualToString:PTREQPASSCODE_TEXT] && [NSDictionary dictionaryWithContentsOfFile:PTLAST_PLIST] != nil)
 		for(UIView *subview in cell.contentView.subviews)
 			if([subview isKindOfClass:[%c(UITableViewLabel) class]])
 				[(UITableViewLabel *)subview setText:[NSDictionary dictionaryWithContentsOfFile:PTLAST_PLIST][@"PTLastText"]];
@@ -99,7 +111,7 @@ static PTAlertViewDelegate *ptdelegate;
 }
 
 -(void)viewWillDisappear:(BOOL)animated{
-	if([self.navigationItem.title isEqualToString:@"Require Passcode"]){
+	if([self.navigationItem.title isEqualToString:PTREQPASSCODE_TEXT]){
 		[[NSDistributedNotificationCenter defaultCenter] removeObserver:self];
 
 		for(int i = 0; i < [[self table] numberOfRowsInSection:0]; i++){
@@ -125,8 +137,12 @@ static PTAlertViewDelegate *ptdelegate;
 
     for(int i = 0; i < [[self table] numberOfRowsInSection:0]; i++){
     	PSTableCell *cell = (PSTableCell *)[[self table] cellForRowAtIndexPath:[NSIndexPath indexPathForRow:i inSection:0]];
-    	if(cell.accessoryType == UITableViewCellAccessoryCheckmark)
-    		ptalertview.tag = [[[cell title] componentsSeparatedByString:@" "][0] intValue];
+    	if(cell.accessoryType == UITableViewCellAccessoryCheckmark){
+    		if([[cell title] isEqualToString:PTIMM_TEXT])
+    			ptalertview.tag = -1;
+    		else
+	    		ptalertview.tag = [[[cell title] componentsSeparatedByString:@" "][1] intValue];
+    	}
     }
 
     [ptalertview show];
@@ -146,7 +162,7 @@ static PTAlertViewDelegate *ptdelegate;
 }
 
 %new -(void)passtime_reselectSpecifier{
-	[self tableView:[self table] didSelectRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0]];
+	[self tableView:[self table] didSelectRowAtIndexPath:[NSIndexPath indexPathForRow:[[self table] numberOfRowsInSection:0]-1 inSection:0]];
 }
 
 %end
@@ -161,9 +177,9 @@ static PTAlertViewDelegate *ptdeleteDelegate;
 -(id)itemsFromParent{
 	NSArray *items = %orig();
 
-	NSLog(@"[PassTime] Received call to -itemsFromParent, appears we %@ in Require Passcode pane (%@)", NSStringFromBool([self.navigationItem.title isEqualToString:@"Require Passcode"]), self);
+	NSLog(@"[PassTime] Received call to -itemsFromParent, appears we %@ in Require Passcode pane (%@)", NSStringFromBool([self.navigationItem.title isEqualToString:PTREQPASSCODE_TEXT]), self);
 	
-	if([self.navigationItem.title isEqualToString:@"Require Passcode"]){
+	if([self.navigationItem.title isEqualToString:PTREQPASSCODE_TEXT]){
 		PSSpecifier *first = items.count > 0?items[1]:nil;
 		NSMutableArray *additional = [[NSMutableArray alloc] init];
 		for(int i = 0; i < items.count - 1; i++)
