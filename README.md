@@ -1,7 +1,8 @@
 # PassTime
-=======================
 
 Customizable Passcode requirement durations. Supports all devices iOS 7 - 8, [commercial tweak available from BigBoss](http://cydia.saurik.com/package/com.insanj.passtime/).
+
+![](screenshot.PNG)
 
 ## [License](LICENSE.md)
 
