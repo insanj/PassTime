@@ -11,6 +11,7 @@
 
 @interface PSListItemsController (PassTime) <UIAlertViewDelegate>
 
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex;
 - (void)passtime_addButtonTapped:(UIBarButtonItem *)sender;
 
 @end

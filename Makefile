@@ -1,6 +1,7 @@
 THEOS_PACKAGE_DIR_NAME = debs
 TARGET = iphone:clang:latest:7.0
 ARCHS = armv7 arm64
+# DEBUG = 1
 include theos/makefiles/common.mk
 
 TWEAK_NAME = PassTime
