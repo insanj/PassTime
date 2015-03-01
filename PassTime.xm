@@ -16,8 +16,6 @@ static NSString *kPassTimePasscodeLockText = [[NSBundle mainBundle] localizedStr
 static NSString *kPassTimePasscodeMesaText = [[NSBundle mainBundle] localizedStringForKey:@"MESA" value:@"Touch ID & Passcode" table:@"Passcode Lock Mesa"];
 static NSString *kPassTimePasscodeRequireText = [[NSBundle mainBundle] localizedStringForKey:@"PASSCODE_REQ" value:@"Require Passcode" table:@"Passcode Lock"];
 
-static NSInteger kPassTimeAlertTag = 555;
-
 #define LOCALIZE_STRING [[NSBundle mainBundle] localizedStringForKey:@"15_MINUTES" value:@"After %@ minutes" table:@"Passcode Lock"]
 #define LOCALIZE(str) [NSString stringWithFormat:LOCALIZE_STRING, str]
 
@@ -99,21 +97,22 @@ static NSInteger kPassTimeAlertTag = 555;
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
 	%orig();
 
-	NSInteger selectedRow = indexPath.row;
-	PSSpecifier *selectedSpecifier = (PSSpecifier *)[self itemsFromParent][indexPath.row+1];
-	NSString *selectedShortTitle = [[selectedSpecifier.shortTitleDictionary allValues] firstObject];
+	if ([self.navigationItem.title isEqualToString:kPassTimePasscodeRequireText]) {
+		NSInteger selectedRow = indexPath.row;
+		PSSpecifier *selectedSpecifier = (PSSpecifier *)[self itemsFromParent][indexPath.row+1];
+		NSString *selectedShortTitle = [[selectedSpecifier.shortTitleDictionary allValues] firstObject];
 
-	HBPreferences *preferences = getPassTimePreferences();
-	[preferences setInteger:selectedRow forKey:kPassTimeLastSelectedRowIdentifier];
-	[preferences setObject:selectedShortTitle forKey:kPassTimeLastSelectedNameIdentifier];
+		HBPreferences *preferences = getPassTimePreferences();
+		[preferences setInteger:selectedRow forKey:kPassTimeLastSelectedRowIdentifier];
+		[preferences setObject:selectedShortTitle forKey:kPassTimeLastSelectedNameIdentifier];
 
-	LOG(@"saving selected index %i with title \"%@\"", (int)selectedRow, selectedShortTitle);
+		LOG(@"saving selected index %i with title \"%@\"", (int)selectedRow, selectedShortTitle);
+	}
 }
 
 %new - (void)passtime_addButtonTapped:(UIBarButtonItem *)sender {
 	UIAlertView *optionsPrompt = [[UIAlertView alloc] initWithTitle:@"PassTime" message:[LOCALIZE(@"How many") stringByAppendingString:@"?"] delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"Done", nil];
 	optionsPrompt.alertViewStyle = UIAlertViewStylePlainTextInput;
-	optionsPrompt.tag = kPassTimeAlertTag;
 
 	UITextField *optionsPromptTextField = [optionsPrompt textFieldAtIndex:0];
 	optionsPromptTextField.placeholder = @"e.g. 10, 15";
@@ -125,7 +124,7 @@ static NSInteger kPassTimeAlertTag = 555;
 }
 
 %new - (void)alertView:(UIAlertView *)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex {
-	if (alertView.tag == kPassTimeAlertTag && buttonIndex != [alertView cancelButtonIndex]) {
+	if ([self.navigationItem.title isEqualToString:kPassTimePasscodeRequireText] && buttonIndex != [alertView cancelButtonIndex]) {
 		NSString *durationText = [alertView textFieldAtIndex:0].text;
 		NSNumber *duration = @([durationText intValue] * 60);
 

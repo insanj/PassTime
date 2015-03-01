@@ -2,7 +2,7 @@ Package: com.insanj.passtime
 Name: PassTime
 Pre-Depends: firmware (>= 7.0)
 Depends: mobilesubstrate, ws.hbang.common (>= 1.2)
-Version: 1.1
+Version: 1.1.1
 Architecture: iphoneos-arm
 Description: Configurable Passcode durations.
 Maintainer: Julian Weiss <insanjmail@gmail.com>
